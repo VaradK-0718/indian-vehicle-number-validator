@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vehicle Registration Number Validator — Finite Automata</title>
+<meta name="description" content="A DFA-based Indian vehicle registration number format validator, built for a Formal Languages and Finite Automata course project." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 48 48" width="34" height="34">
+        <circle cx="12" cy="24" r="9" fill="none" stroke="currentColor" stroke-width="2.5"/>
+        <circle cx="36" cy="24" r="9" fill="none" stroke="currentColor" stroke-width="2.5"/>
+        <circle cx="36" cy="24" r="5.4" fill="none" stroke="currentColor" stroke-width="2"/>
+        <line x1="1" y1="24" x2="3" y2="24" stroke="currentColor" stroke-width="2.5"/>
+        <path d="M21 24 L27 24" stroke="currentColor" stroke-width="2.5"/>
+        <path d="M24.5 21 L27.5 24 L24.5 27" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <p class="course-tag">Formal Languages &amp; Finite Automata — Mini Project</p>
+      <h1>Vehicle Registration Number Validator</h1>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ============ HERO / LIVE DEMO ============ -->
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <p class="hero-kicker">Deterministic Finite Automaton</p>
+      <h2>A vehicle number is just a string a machine can read one character at a time.</h2>
+      <p class="hero-lede">
+        This project builds a DFA that recognizes a simplified Indian vehicle
+        registration format (e.g. <code>MH12AB1234</code>), <span class="pattern-inline">STATE + RTO + SERIES + 1–4 digits</span>,
+        then walks that DFA through your input, state by state, so you can see
+        exactly why it accepts or rejects.
+      </p>
+      <p class="disclaimer">
+        This is a simplified academic model, and real Indian formats vary. Passing this
+        syntactic check does not prove a registration is real or says anything about ownership.
+      </p>
+    </div>
+
+    <div class="input-card" id="input-card">
+      <label class="field-label" for="vehicle-input">Enter a vehicle registration number</label>
+      <div class="input-row">
+        <input
+          type="text"
+          id="vehicle-input"
+          maxlength="12"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="e.g. MH12AB1234"
+          aria-describedby="char-counter format-guide"
+        />
+        <span class="char-counter" id="char-counter">0 / 10 (min 7)</span>
+      </div>
+
+      <div class="format-guide" id="format-guide">
+        <span class="format-guide-label">Expected: state code, RTO, 2-letter series, then 1–4 digits (last three boxes optional)</span>
+        <div class="format-cells" id="format-cells" aria-hidden="true">
+          <!-- filled by JS -->
+        </div>
+        <p class="format-legend"><strong>L</strong> = letter A–Z &nbsp;·&nbsp; <strong>D</strong> = digit 0–9 &nbsp;·&nbsp; dashed boxes are optional</p>
+      </div>
+
+      <div class="button-row">
+        <button class="btn btn-primary" id="btn-validate">Validate</button>
+        <button class="btn btn-secondary" id="btn-simulate">Simulate DFA</button>
+        <button class="btn btn-ghost" id="btn-reset">Clear</button>
+      </div>
+
+      <div class="example-row">
+        <span class="example-label">Try an example</span>
+        <button class="chip chip-valid" data-example-group="valid">Load valid example</button>
+        <button class="chip chip-invalid" data-example-group="invalid">Load invalid example</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RESULT ============ -->
+  <section class="wrap section" id="result-section" hidden>
+    <h3 class="section-title">Validation result</h3>
+    <div class="result-card" id="result-card">
+      <!-- filled by JS -->
+    </div>
+  </section>
+
+  <!-- ============ DFA VISUALIZATION ============ -->
+  <section class="wrap section">
+    <h3 class="section-title">The DFA</h3>
+    <p class="section-intro">
+      The states <code>q7</code> to <code>q10</code> are accepting (1 to 4 digits
+      with value ≥ 1). The <code>z</code> states (<code>q7z</code>…<code>q10z</code>) mean “only zeros so far”,
+      so <code>0</code> and <code>0000</code> are rejected. <code>q3z</code> blocks RTO <code>00</code>. <code>q1</code> stands for 18 states, one per
+      first letter of a state code, so the state code is checked by the DFA itself. Every transition not drawn leads to the dead state <code>qD</code>, which never lets go. During simulation, the active state and the edge
+      being followed are highlighted below.
+    </p>
+
+    <div class="graph-panel">
+      <div class="graph-toolbar">
+        <div class="legend">
+          <span class="legend-item"><span class="legend-swatch swatch-start"></span>Start</span>
+          <span class="legend-item"><span class="legend-swatch swatch-active"></span>Current state</span>
+          <span class="legend-item"><span class="legend-swatch swatch-accept"></span>Accepting</span>
+          <span class="legend-item"><span class="legend-swatch swatch-dead"></span>Dead state</span>
+        </div>
+      </div>
+      <div id="dfa-graph" role="img" aria-label="Diagram of the DFA states q0 through q10, the zero-tracking states and the dead state qD"></div>
+    </div>
+  </section>
+
+  <!-- ============ SIMULATION ============ -->
+  <section class="wrap section">
+    <h3 class="section-title">Step-by-step simulation</h3>
+    <p class="section-intro">
+      This is the DFA transition function actually running — reading one
+      character, classifying it as a letter or a digit, and moving to the
+      state that classification demands. Nothing here is a JavaScript regex
+      standing in for the automaton.
+    </p>
+
+    <div class="sim-controls">
+      <button class="btn btn-primary" id="sim-start">Start simulation</button>
+      <button class="btn btn-secondary" id="sim-step">Next step</button>
+      <button class="btn btn-secondary" id="sim-pause">Pause</button>
+      <button class="btn btn-ghost" id="sim-reset">Reset</button>
+
+      <div class="speed-control">
+        <label for="speed-slider">Speed</label>
+        <input type="range" id="speed-slider" min="1" max="5" value="3" step="1" />
+        <div class="speed-ends"><span>Slow</span><span>Fast</span></div>
+      </div>
+    </div>
+
+    <div class="sim-status" id="sim-status" aria-live="polite">Enter a number and press “Start simulation.”</div>
+
+    <div class="table-scroll">
+      <table class="sim-table" id="sim-table">
+        <thead>
+          <tr>
+            <th>Step</th>
+            <th>Character</th>
+            <th>Type</th>
+            <th>Current state</th>
+            <th>Next state</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody id="sim-table-body">
+          <tr class="empty-row"><td colspan="6">Simulation steps will appear here.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ REGEX <-> DFA ============ -->
+  <section class="wrap section">
+    <h3 class="section-title">Regular expression → DFA</h3>
+    <p class="section-intro">
+      A regular expression is a compact <em>description</em> of the same
+      language this DFA recognizes. The two are formally equivalent — every
+      regular language has some DFA, and every DFA describes some regular
+      language — but the validator above never asks a regex to do the
+      accepting or rejecting. It runs the transition function you see in the
+      table above, character by character.
+    </p>
+
+    <div class="pipeline" aria-hidden="false">
+      <div class="pipeline-step"><code>LL DD LL D{1,4}</code><span>pattern</span></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><code>^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{1,4}$</code><span>regular expression (+ state-code and value checks)</span></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><code>q0 … q10, q3z, q7z…q10z, qD</code><span>DFA</span></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><code>accept / reject</code><span>string validation</span></div>
+    </div>
+  </section>
+
+  <!-- ============ FORMAL DEFINITION ============ -->
+  <section class="wrap section">
+    <button class="disclosure-toggle" id="formal-toggle" aria-expanded="false" aria-controls="formal-body">
+      <span class="section-title" style="margin:0;">Formal definition of the DFA</span>
+      <span class="disclosure-icon" aria-hidden="true">+</span>
+    </button>
+
+    <div class="formal-body" id="formal-body" hidden>
+      <div class="theorem-box">
+        <p class="theorem-statement">M&nbsp;=&nbsp;(Q,&nbsp;Σ,&nbsp;δ,&nbsp;q<sub>0</sub>,&nbsp;F)</p>
+      </div>
+
+      <dl class="formal-list">
+        <div class="formal-row">
+          <dt>Q</dt>
+          <dd>
+            <code>{q0, q1[A]…q1[W] (18), q2, q3, q3z, q4, q5, q6, q7…q10, q7z…q10z, qD}</code>.
+            Each state records how much of the pattern has been seen, plus whether the vehicle number is still all zeros.
+          </dd>
+        </div>
+        <div class="formal-row">
+          <dt>Σ</dt>
+          <dd>
+            The alphabet: <code>{A–Z, 0–9}</code> (spaces and hyphens are stripped before the DFA runs). Every input character must belong
+            to this set, or the DFA treats it as invalid.
+          </dd>
+        </div>
+        <div class="formal-row">
+          <dt>δ</dt>
+          <dd>
+            The transition function, <code>δ: Q × Σ → Q</code>. Given a current state
+            and one input character, it returns exactly one next state — see the
+            transition table below.
+          </dd>
+        </div>
+        <div class="formal-row">
+          <dt>q<sub>0</sub></dt>
+          <dd>The initial state, before any character has been read.</dd>
+        </div>
+        <div class="formal-row">
+          <dt>F</dt>
+          <dd>
+            The set of accepting states: <code>{q7, q8, q9, q10}</code>. A string is accepted only if the DFA ends in one of
+            these: 1–4 final digits whose value is at least 1.
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ TRANSITION TABLE ============ -->
+  <section class="wrap section">
+    <h3 class="section-title">Transition table</h3>
+    <p class="section-intro">This is <code>δ</code> written out in full — one row per state, one column per input category.</p>
+    <div class="table-scroll">
+      <table class="transition-table" id="transition-table">
+        <thead>
+          <tr><th>State</th><th>A–Z (letter)</th><th>0–9 (digit)</th><th>Meaning</th></tr>
+        </thead>
+        <tbody id="transition-table-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ TEST CASES ============ -->
+  <section class="wrap section">
+    <h3 class="section-title">Test cases</h3>
+    <p class="section-intro">A ready-made set of strings that should accept, and a set designed to fail for different reasons.</p>
+
+    <div class="test-columns">
+      <div class="test-column">
+        <h4 class="test-column-title valid-title">Should be accepted</h4>
+        <ul class="test-list" id="valid-test-list"></ul>
+      </div>
+      <div class="test-column">
+        <h4 class="test-column-title invalid-title">Should be rejected</h4>
+        <ul class="test-list" id="invalid-test-list"></ul>
+      </div>
+    </div>
+
+    <h4 class="suite-title">Automated test suite <span class="suite-summary" id="suite-summary"></span>
+      <button class="btn btn-secondary btn-small" id="btn-run-tests">Run all tests</button></h4>
+    <div class="table-scroll">
+      <table class="suite-table"><thead><tr><th>Input</th><th>Expected</th><th>Actual</th><th>Status</th></tr></thead>
+      <tbody id="suite-body"></tbody></table>
+    </div>
+  </section>
+
+  <section class="wrap section">
+    <h3 class="section-title">Validation history</h3>
+    <p class="section-intro">The last 15 validations, stored in this browser only. Click one to run it again.</p>
+    <div class="table-scroll">
+      <table class="suite-table"><thead><tr><th>Input</th><th>Result</th><th>Time</th></tr></thead>
+      <tbody id="history-body"></tbody></table>
+    </div>
+    <p><button class="btn btn-ghost btn-small" id="btn-clear-history">Clear history</button></p>
+  </section>
+
+  <!-- ============ ABOUT ============ -->
+  <section class="wrap section about-section">
+    <h3 class="section-title">About this project</h3>
+
+    <div class="about-grid">
+      <div class="about-block">
+        <h4>What is a DFA?</h4>
+        <p>
+          A deterministic finite automaton is a machine with a finite number
+          of states, a starting state, and a rule that says exactly one next
+          state for every state/input-symbol pair. "Deterministic" means
+          there is never a choice — the next state is always fully decided by
+          the current state and the character being read.
+        </p>
+      </div>
+      <div class="about-block">
+        <h4>Why a DFA fits this problem</h4>
+        <p>
+          A vehicle number in this simplified format is a fixed sequence of
+          letter-or-digit positions. The DFA only needs to remember "which
+          position am I at," which is exactly what a state can hold — no
+          stack, no extra memory, no backtracking required.
+        </p>
+      </div>
+      <div class="about-block">
+        <h4>Acceptance condition</h4>
+        <p>
+          After the final character is consumed, check the current state. If
+          it is one of <code>q7</code>–<code>q10</code>, every character arrived in the right
+          position and the string belongs to the language. Any other final
+          state — including the dead state <code>qD</code> — means reject.
+        </p>
+      </div>
+      <div class="about-block">
+        <h4>Scope note</h4>
+        <p>
+          Real Indian registration plates vary by state code, RTO code, and
+          special series (BH-series, temporary plates, diplomatic plates, and
+          so on). This project intentionally uses one simplified fixed format,
+          <span class="pattern-inline">STATE + RTO + SERIES + 1–4 digits</span>, to keep the automaton
+          small enough to inspect by eye. One real-world variant is included: an RTO written as a digit plus a letter (e.g. Delhi <code>DL8CAF1</code>).
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ACADEMIC REPORT ============ -->
+  <section class="wrap section">
+    <h3 class="section-title">Project report</h3>
+    <div class="about-grid">
+      <div class="about-block"><h4>Introduction</h4><p>Registration plates follow strict positional rules, which makes them a natural fit for regular languages. This project recognises a simplified Indian format with a DFA and shows every transition it makes.</p></div>
+      <div class="about-block"><h4>Problem statement</h4><p>Given a string over letters and digits, decide whether it has the form STATE CODE + RTO CODE + SERIES + VEHICLE NUMBER, using only a finite-state machine and no counters or backtracking.</p></div>
+      <div class="about-block"><h4>Objectives</h4><p>Define the language formally; build a DFA that recognises it; accept 1–4 digit vehicle numbers with value 1–9999; reject unknown state codes, RTO 00 and all-zero numbers; and display each step of the run.</p></div>
+      <div class="about-block"><h4>Alphabet</h4><p>Σ = {A–Z} ∪ {0–9}. Input is uppercased, and spaces and hyphens are removed. Any other character is rejected before the DFA runs.</p></div>
+      <div class="about-block"><h4>Language definition</h4><p>L = { s&nbsp;&nbsp;|&nbsp;&nbsp;s = S·R·E·N, S ∈ the 37 configured state/UT codes, R ∈ {01–99} ∪ {1–9 followed by a letter}, E ∈ [A–Z]², N ∈ [0–9]{1,4} with value 1 to 9999 }. L is finite, hence regular.</p></div>
+      <div class="about-block"><h4>Regular expression</h4><p><code>^([A-Z]{2})([0-9]{2})([A-Z]{2})([0-9]{1,4})$</code> is the standard form. The implementation widens the RTO group to <code>(0[1-9]|[1-9][0-9]|[1-9][A-Z])</code> to admit codes like <code>8C</code>. State code and value are then checked independently, and the result must agree with the DFA.</p></div>
+      <div class="about-block"><h4>Algorithm</h4><p>1) Normalise the input. 2) Reject empty input or unsupported characters. 3) Start in q0 and apply δ to each character in turn. 4) Accept only if the final state is in F. 5) Cross-check with the regex and component rules, and explain any rejection from the state where qD was entered.</p></div>
+      <div class="about-block"><h4>Pseudocode</h4><pre class="code-block">s ← normalise(input)
+if s is empty or has bad chars: REJECT
+state ← q0
+for each ch in s:
+    state ← δ(state, ch)
+    record (ch, state)
+if state ∈ {q7,q8,q9,q10}: ACCEPT
+else: REJECT</pre></div>
+      <div class="about-block"><h4>Time complexity</h4><p>O(n) for an input of length n, with one table lookup per character. Valid inputs have at most 10 characters, so the work is effectively constant.</p></div>
+      <div class="about-block"><h4>Space complexity</h4><p>O(1) for the machine itself, since it keeps only the current state. The step-by-step trace uses O(n) extra memory for display.</p></div>
+      <div class="about-block"><h4>Applications</h4><p>Form validation, data cleaning of records, lexical analysis, and teaching examples for how DFAs, regular expressions and tokenisers relate.</p></div>
+      <div class="about-block"><h4>Advantages</h4><p>Deterministic, linear time, no backtracking, and every decision can be traced to one transition. The zero-tracking states let a finite machine enforce “value ≥ 1” without arithmetic.</p></div>
+      <div class="about-block"><h4>Limitations</h4><p>This is syntactic validation only: it cannot confirm that a registration exists, is current, or belongs to anyone. Real formats vary (BH-series, temporary, military and diplomatic plates), and the code list is a configuration, not an official registry.</p></div>
+      <div class="about-block"><h4>Conclusion</h4><p>A small DFA of about 40 states (18 of them first-letter states) recognises the language exactly. Variable-length numbers and the “not zero” rule fit in a finite-state machine, which supports the claim that plate syntax is a regular language.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ FUTURE WORK ============ -->
+  <section class="wrap section">
+    <h3 class="section-title">Possible extensions</h3>
+    <ul class="future-list">
+      <li>Support additional real-world registration formats (BH-series, temporary plates)</li>
+      <li>Visualize the equivalent NFA before determinization</li>
+      <li>Walk through NFA → DFA subset construction</li>
+      <li>DFA minimization on this machine</li>
+      <li>Regular expression → NFA construction (Thompson's algorithm)</li>
+      <li>A custom DFA builder for other patterns</li>
+      <li>Export the DFA diagram as an image</li>
+      <li>More finite-automata validators (email format, IPv4, etc.)</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Built for a Formal Languages &amp; Finite Automata coursework demonstration. Not affiliated with, and does not query, any RTO or Parivahan system.</p>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
